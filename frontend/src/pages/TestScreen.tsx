@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useTestStore } from '../store/testStore';
+import { useTestStore, TEST_STORAGE_KEY } from '../store/testStore';
 import { submitAttempt } from '../api/attempts';
 import Timer from '../components/Timer';
 import QuestionPalette from '../components/QuestionPalette';
@@ -42,7 +42,7 @@ class TestErrorBoundary extends Component<
               Your progress may be saved. Please go back to the dashboard.
             </p>
             <a
-              href="/dashboard"
+              href={location.pathname.startsWith('/demo') ? '/demo/dashboard' : '/dashboard'}
               className="inline-block px-6 py-3 bg-accent text-onaccent font-bold rounded-xl hover:bg-accenth transition-colors"
             >
               Go to Dashboard
@@ -76,7 +76,7 @@ function TestScreenInner() {
   // Restore from sessionStorage if store is empty (page refresh)
   useEffect(() => {
     if (questions.length === 0) {
-      const saved = sessionStorage.getItem('rankly_test');
+      const saved = sessionStorage.getItem(TEST_STORAGE_KEY);
       if (saved) {
         try {
           const state = JSON.parse(saved);
@@ -171,7 +171,7 @@ function TestScreenInner() {
           </div>
           <h2 className="text-xl font-black text-fg mb-2">No test loaded</h2>
           <p className="text-muted text-sm mb-6">Start a test from the paper review page.</p>
-          <a href="/dashboard"
+          <a href={location.pathname.startsWith('/demo') ? '/demo/dashboard' : '/dashboard'}
             className="inline-block px-5 py-2.5 bg-accent text-onaccent font-bold rounded-xl hover:bg-accenth transition-colors">
             Go to Dashboard
           </a>
