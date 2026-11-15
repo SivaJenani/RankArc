@@ -27,11 +27,11 @@ h1{margin:18px 0;font-size:clamp(58px,9vw,126px);line-height:.9;letter-spacing:-
 h1 em{color:rgb(var(--c-accent));font-style:normal}
 .lede{max-width:510px;color:rgb(var(--c-muted));font-size:17px;line-height:1.6}
 .actions{display:flex;gap:12px;margin-top:30px;flex-wrap:wrap}
-button{border:0;border-radius:10px;padding:15px 20px;color:rgb(var(--c-onaccent));background:rgb(var(--c-accent));font:inherit;font-weight:700;cursor:pointer;transition:all .2s ease}
-button:hover{background:rgb(var(--c-accenth))}
-button span{margin-left:18px;font-size:20px}
-button.secondary{color:rgb(var(--c-fg));background:transparent;border:2px solid rgb(var(--c-fg))}
-button.secondary:hover{background:rgb(var(--c-fg));color:rgb(var(--c-page))}
+.actions button{border:0;border-radius:10px;padding:15px 20px;color:rgb(var(--c-onaccent));background:rgb(var(--c-accent));font:inherit;font-weight:700;cursor:pointer;transition:all .2s ease}
+.actions button:hover{background:rgb(var(--c-accenth))}
+.actions button span{margin-left:18px;font-size:20px}
+.actions button.secondary{color:rgb(var(--c-fg));background:transparent;border:2px solid rgb(var(--c-fg))}
+.actions button.secondary:hover{background:rgb(var(--c-fg));color:rgb(var(--c-page))}
 .preview{max-width:680px;margin:auto 0 auto auto;padding:28px;color:#F8F8F8;background:#0F0F0F;border-radius:16px;box-shadow:16px 16px 0 rgb(var(--c-accent));border:1px solid #337418}
 .preview>div:first-child,.preview footer{display:flex;justify-content:space-between;align-items:center}
 .preview .kicker{color:#5DD62C}
