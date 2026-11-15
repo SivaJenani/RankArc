@@ -1,3 +1,4 @@
+import PrivateImage from '../components/PrivateImage';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -20,14 +21,15 @@ function AnswerCard({ item, index }: { item: ResultQuestion; index: number }) {
   const selectedOpt = item.options.find((o) => o.id === item.selected_option_id);
   const correctOpt = item.options.find((o) => o.id === item.correct_option_id);
   const isSkipped = item.selected_option_id === null;
+  const ungraded = !isSkipped && item.correct_option_id === null;
 
-  const borderColor = isSkipped
+  const borderColor = isSkipped || ungraded
     ? 'border-fg/10'
     : item.is_correct
     ? 'border-accent'
     : 'border-red-400';
 
-  const bgColor = isSkipped
+  const bgColor = isSkipped || ungraded
     ? 'bg-card/80'
     : item.is_correct
     ? 'bg-accent/10'
@@ -50,6 +52,8 @@ function AnswerCard({ item, index }: { item: ResultQuestion; index: number }) {
           <div className="flex items-center gap-3 mt-2">
             {isSkipped ? (
               <span className="text-xs text-muted font-semibold">— Not answered</span>
+            ) : ungraded ? (
+              <span className="text-xs text-muted font-semibold">Not graded - no verified answer key</span>
             ) : item.is_correct ? (
               <span className="text-xs text-deeptext font-bold flex items-center gap-1">
                 <svg className="w-3.5 h-3.5 text-accent" fill="currentColor" viewBox="0 0 20 20">
@@ -84,7 +88,7 @@ function AnswerCard({ item, index }: { item: ResultQuestion; index: number }) {
           {/* Question Diagram / Image if present */}
           {item.image_url && (
             <div className="mb-3 p-2 bg-card rounded-xl border border-fg/10 max-w-md shadow-sm">
-              <img
+              <PrivateImage
                 src={item.image_url}
                 alt={`Question ${item.number || ''} diagram`}
                 className="max-h-60 w-auto object-contain rounded-lg"
@@ -104,7 +108,7 @@ function AnswerCard({ item, index }: { item: ResultQuestion; index: number }) {
                   className={`flex items-center gap-2.5 p-3 rounded-xl border ${
                     isCorrect
                       ? 'border-accent bg-accent/20'
-                      : isSelected && !isCorrect
+                      : isSelected && !isCorrect && !ungraded
                       ? 'border-red-400 bg-red-100'
                       : 'border-fg/10 bg-card/70'
                   }`}
@@ -118,7 +122,7 @@ function AnswerCard({ item, index }: { item: ResultQuestion; index: number }) {
                   {isCorrect && (
                     <span className="text-xs text-deeptext font-bold">✓ Correct</span>
                   )}
-                  {isSelected && !isCorrect && (
+                  {isSelected && !isCorrect && !ungraded && (
                     <span className="text-xs text-red-600 font-bold">✗ Your answer</span>
                   )}
                 </div>
@@ -203,6 +207,8 @@ export default function Results() {
   const correct = answers.filter((a) => a.is_correct === true).length;
   const wrong = answers.filter((a) => a.is_correct === false).length;
   const skipped = answers.filter((a) => a.selected_option_id === null).length;
+  const ungraded = answers.filter(a => a.selected_option_id !== null && a.correct_option_id === null).length;
+  const hasScore = attempt.score !== null;
   const percentage = attempt.total_questions > 0
     ? Math.round((correct / attempt.total_questions) * 100)
     : 0;
@@ -221,12 +227,12 @@ export default function Results() {
                 Test Complete
               </p>
               <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-                {correct} <span className="text-accent">/</span> {attempt.total_questions}
+                {hasScore ? <>{correct} <span className="text-accent">/</span> {attempt.total_questions}</> : "Practice saved"}
               </h1>
-              <p className="text-invfg/70 mt-1 font-medium">questions correct</p>
+              <p className="text-invfg/70 mt-1 font-medium">{hasScore ? "questions correct" : "No complete verified answer key. No score assigned."}</p>
             </div>
             <div className="text-right">
-              <div className="text-5xl md:text-6xl font-black text-accent">{percentage}%</div>
+              <div className="text-3xl md:text-5xl font-black text-accent">{hasScore ? `${percentage}%` : "Unscored"}</div>
               <p className="text-invfg/70 text-sm mt-1">{formatDuration(timeTaken)} taken</p>
             </div>
           </div>
@@ -236,6 +242,7 @@ export default function Results() {
               { label: 'Correct', value: correct, color: 'bg-deep text-accent border border-accent/40' },
               { label: 'Incorrect', value: wrong, color: 'bg-red-950/60 text-red-400 border border-red-800/40' },
               { label: 'Skipped', value: skipped, color: 'bg-white/10 text-white/70 border border-white/10' },
+              ...(ungraded ? [{ label: 'Not graded', value: ungraded, color: 'bg-white/10 text-white/70 border border-white/10' }] : []),
             ].map((stat) => (
               <div key={stat.label} className={`flex-1 min-w-[90px] rounded-2xl p-3 text-center ${stat.color}`}>
                 <div className="text-2xl font-black">{stat.value}</div>
