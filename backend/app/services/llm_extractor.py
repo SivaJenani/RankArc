@@ -38,8 +38,9 @@ def _read_document(file_path, paper_id, settings):
             if len(doc) > 300:
                 raise ValueError("Split this document into files of at most 300 pages.")
             # A scanned page anywhere, not just the cover, selects image-first mode.
+            any_graphics = any(bool(p.get_images()) or bool(p.get_drawings()) for p in doc)
             scanned = any(len(p.get_text().strip()) < 40 and bool(p.get_images()) for p in doc)
-        if scanned:
+        if scanned or any_graphics:
             return extract_scanned_paper(file_path, paper_id, settings.upload_dir,
                                         lambda p, s: set_paper_progress(paper_id, p, s))
     raw = extract_text(file_path)
