@@ -34,7 +34,7 @@ function DemoAccountNotice() {
 function App() {
  return <BrowserRouter basename={DEMO_MODE ? '/demo' : undefined}>
   {DEMO_MODE ? <DemoNavbar/> : <Navbar/>}
-  {!DEMO_MODE && <aside className="bg-accent/10 text-fg px-4 py-3 text-center text-sm">Want to explore without login? <a className="text-deeptext font-bold underline" href="/demo/dashboard">Open the sample demo</a>. Real personal uploads are not recommended until the privacy repair is complete.</aside>}
+  {!DEMO_MODE && <aside className="bg-accent/10 text-fg px-4 py-3 text-center text-sm">Want to explore without login? <a className="text-deeptext font-bold underline" href="/demo/dashboard">Open the sample demo</a>. Repair preview: files, accounts and results use temporary storage and can disappear on restart. Keep originals. Use non-sensitive test papers only.</aside>}
   <Routes>
    <Route path="/" element={<Landing/>}/>
    <Route path="/login" element={DEMO_MODE ? <DemoAccountNotice/> : <Login/>}/>
@@ -52,5 +52,4 @@ function App() {
   </Routes><Toaster position="top-right" toastOptions={{style:{fontFamily:'Inter, sans-serif',fontWeight:600,fontSize:'14px',borderRadius:'12px'},success:{duration:3000},error:{duration:5000}}}/>
  </BrowserRouter>;
 }
-if(location.pathname==='/') location.replace('/demo/');
-else createRoot(document.getElementById('root')!).render(<StrictMode><App/></StrictMode>);
+createRoot(document.getElementById('root')!).render(<StrictMode><App/></StrictMode>);
