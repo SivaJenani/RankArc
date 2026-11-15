@@ -1,3 +1,4 @@
+import PrivateImage from '../components/PrivateImage';
 import { useEffect, useRef, useState, Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -60,7 +61,7 @@ function TestScreenInner() {
   const { attemptId } = useParams<{ attemptId: string }>();
   const navigate = useNavigate();
   const {
-    questions, answers, currentIndex, timeLeft, isSubmitting,
+    questions, answers, currentIndex, timeLeft, isSubmitting, attemptId: storeAttemptId,
     setAnswer, setCurrentIndex, tickTimer, addTimeSpent, setSubmitting, resetTest,
   } = useTestStore();
 
@@ -87,6 +88,8 @@ function TestScreenInner() {
               currentIndex: state.currentIndex,
               timeLeft: state.timeLeft,
               attemptId: state.attemptId,
+              timeSpent: state.timeSpent || {},
+              isSubmitting: false,
             });
           }
         } catch {
@@ -159,7 +162,7 @@ function TestScreenInner() {
     }
   };
 
-  if (questions.length === 0) {
+  if (questions.length === 0 || storeAttemptId !== numId) {
     return (
       <div className="min-h-screen bg-page flex items-center justify-center px-4">
         <div className="text-center bg-card/90 p-8 rounded-2xl border border-fg/10 shadow-lg">
@@ -240,15 +243,15 @@ function TestScreenInner() {
 
             {/* Question Diagram / Image if present */}
             {currentQuestion.image_url && (
-              <div className="mb-6 ml-11 flex flex-col items-start">
+              <div className="mb-6 md:ml-11 flex flex-col items-start">
                 <div 
                   onClick={() => setZoomImage(currentQuestion.image_url ?? null)}
-                  className="group relative cursor-zoom-in p-4 bg-card rounded-2xl border-2 border-fg/10 hover:border-accent shadow-sm max-w-3xl transition-all"
+                  className="group relative cursor-zoom-in p-1 md:p-4 bg-card rounded-2xl border-2 border-fg/10 hover:border-accent shadow-sm max-w-3xl transition-all"
                 >
-                  <img
+                  <PrivateImage
                     src={currentQuestion.image_url}
                     alt={`Question ${currentIndex + 1} diagram`}
-                    className="max-h-96 w-auto max-w-full object-contain rounded-lg"
+                    className="w-full h-auto object-contain rounded-lg"
                     loading="lazy"
                   />
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-nav/80 text-white text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-md">
@@ -258,6 +261,7 @@ function TestScreenInner() {
                     Click to enlarge
                   </div>
                 </div>
+                <button type="button" onClick={() => setZoomImage(currentQuestion.image_url ?? null)} className="mt-2 px-3 py-2 rounded-lg border border-accent text-fg text-sm font-bold !bg-transparent">Enlarge original question</button>
               </div>
             )}
 
@@ -439,18 +443,18 @@ function TestScreenInner() {
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="relative max-w-5xl max-h-[92vh] bg-card rounded-3xl p-6 shadow-2xl flex flex-col items-center"
+            className="relative w-full max-w-5xl max-h-[92vh] overflow-auto bg-card rounded-3xl p-2 shadow-2xl"
           >
             <button
               onClick={() => setZoomImage(null)}
-              className="absolute -top-3 -right-3 w-9 h-9 rounded-full bg-nav text-accent font-bold flex items-center justify-center hover:bg-deep transition-colors shadow-xl border-2 border-white"
+              className="fixed top-4 right-4 z-50 w-9 h-9 rounded-full bg-nav text-accent font-bold flex items-center justify-center hover:bg-deep transition-colors shadow-xl border-2 border-white"
             >
               ✕
             </button>
-            <img
+            <PrivateImage
               src={zoomImage}
               alt="Diagram preview"
-              className="max-h-[82vh] w-auto max-w-full object-contain rounded-xl"
+              className="w-[1200px] max-w-none h-auto rounded-xl"
             />
           </div>
         </div>
