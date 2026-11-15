@@ -184,3 +184,72 @@ def test_actual_scan_upload_and_private_images(api):
     assert r.status_code==200 and r.json()['score'] is None
     result=api.get(f'/api/attempts/{start["attempt_id"]}/result',headers=a).json()
     assert len(result['answers'])==100
+
+
+def test_searchable_pdf_graphics_preserved_and_inline_key(api, tmp_path):
+    import fitz
+    from app.services.llm_extractor import _read_document
+    from app.config import get_settings
+    doc = fitz.open(); p = doc.new_page()
+    p.insert_text((45, 60), '1. Identify the pictured shape?')
+    p.draw_rect(fitz.Rect(50, 80, 130, 130), color=(0, 0, 0))
+    p.insert_text((45, 160), '(A) Circle (B) Square (C) Triangle (D) Oval')
+    p.insert_text((45, 185), 'Answer: B')
+    path = tmp_path / 'graphics.pdf'; doc.save(path); doc.close()
+    meta, qs = _read_document(str(path), 987, get_settings())
+    assert len(qs) == 1 and len(qs[0]['options']) == 4
+    assert qs[0]['options'][1]['is_correct']
+    assert qs[0]['image_url'] and meta['unkeyed_questions'] == 0
+
+
+def test_separate_key_review_apply_copy_and_ownership(api):
+    a, b = account(api, 'keyowner'), account(api, 'keyother')
+    pid = upload_docx(api, a, keyed=False)
+    key = b'Answer key\n1 B\n2 A\n3 D\n'
+    route = f'/api/papers/{pid}/answer-key'
+    assert api.post(route+'/preview', headers=b, files={'file':('key.txt',key)}).status_code == 403
+    preview = api.post(route+'/preview', headers=a, files={'file':('key.txt',key)})
+    assert preview.status_code == 200, preview.text
+    p = preview.json(); assert not p['errors']
+    entries = [{k:e[k] for k in ['number','label']} for e in p['entries']]
+    payload = {'entries':entries,'fingerprint':p['fingerprint'],'confirmed':False}
+    assert api.post(route+'/apply',headers=a,json=payload).status_code == 422
+    payload['confirmed']=True
+    assert api.post(route+'/apply',headers=b,json=payload).status_code == 403
+    payload['fingerprint']='stale'
+    assert api.post(route+'/apply',headers=a,json=payload).status_code == 409
+    payload['fingerprint']=p['fingerprint']
+    # Existing unkeyed result must stay unchanged after a key is applied.
+    attempt = api.post(f'/api/attempts/start/{pid}',headers=a).json()
+    q=attempt['questions'][0]
+    submitted=api.post(f'/api/attempts/{attempt["attempt_id"]}/submit',headers=a,json={'answers':[{'question_id':q['id'],'selected_option_id':q['options'][1]['id']}]})
+    assert submitted.json()['score'] is None
+    applied=api.post(route+'/apply',headers=a,json=payload)
+    assert applied.status_code==200,applied.text
+    copy_id=applied.json()['paper_id']; assert copy_id!=pid
+    original=api.get(f'/api/papers/{pid}/questions',headers=a).json()
+    copied=api.get(f'/api/papers/{copy_id}/questions',headers=a).json()
+    assert all(q['correct_option_id'] is None for q in original)
+    assert all(q['correct_option_id'] is not None for q in copied)
+    past=api.get(f'/api/attempts/{attempt["attempt_id"]}/result',headers=a).json()
+    assert past['attempt']['score'] is None
+    new_attempt=api.post(f'/api/attempts/start/{copy_id}',headers=a).json()
+    answers=[]
+    for q,label in zip(new_attempt['questions'],['B','A','D']):
+        assert q['correct_option_id'] is None
+        answers.append({'question_id':q['id'],'selected_option_id':next(o['id'] for o in q['options'] if o['label']==label)})
+    score=api.post(f'/api/attempts/{new_attempt["attempt_id"]}/submit',headers=a,json={'answers':answers})
+    assert score.json()['score']==100
+    for bad in [b'1 B\n1 B\n2 A\n3 D',b'1 B\n2 E\n3 D',b'1 A\n2 B',b'1 A\n2 B\n3 D\n4 A']:
+        response=api.post(route+'/preview',headers=a,files={'file':('key.txt',bad)})
+        assert response.status_code==200 and response.json()['errors']
+
+
+def test_scanned_answer_key_ocr(tmp_path):
+    from PIL import Image,ImageDraw,ImageFont
+    from app.services.answer_keys import read_key,parse_key
+    image=Image.new('RGB',(800,450),'white');draw=ImageDraw.Draw(image)
+    font=ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',36)
+    draw.multiline_text((40,40),'Answer Key\n1 B\n2 A\n3 D',font=font,fill='black',spacing=14)
+    path=tmp_path/'key.png';image.save(path)
+    assert parse_key(read_key(str(path)))==[{'number':1,'label':'B'},{'number':2,'label':'A'},{'number':3,'label':'D'}]
