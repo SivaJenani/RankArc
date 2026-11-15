@@ -29,7 +29,18 @@ app.include_router(auth_router, prefix="/api/auth")
 app.include_router(papers_router, prefix="/api/papers")
 app.include_router(attempts_router, prefix="/api/attempts")
 
-# Serve uploaded files as static assets
-os.makedirs(settings.upload_dir, exist_ok=True)
-os.makedirs(os.path.join(settings.upload_dir, "questions"), exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
+# Uploaded documents and question crops are private, served only by owner-checked routes.
+
+# The separate repair preview serves the built UI and API on one free service.
+frontend_dir = os.getenv("FRONTEND_DIST", "")
+if frontend_dir and os.path.isdir(frontend_dir):
+    from fastapi import HTTPException
+    from fastapi.responses import FileResponse
+    from pathlib import Path
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dir, "assets")), name="ui-assets")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    async def frontend(path: str):
+        if path.startswith(("api/", "uploads/")):
+            raise HTTPException(status_code=404, detail="Not found")
+        return FileResponse(Path(frontend_dir) / "index.html", headers={"Cache-Control": "no-cache"})
