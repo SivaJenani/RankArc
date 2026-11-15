@@ -1,3 +1,5 @@
+import AnswerKeyUpload from '../components/AnswerKeyUpload';
+import { DEMO_MODE } from '../api/demo';
 import PrivateImage from '../components/PrivateImage';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -201,6 +203,7 @@ export default function PaperReview() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
     const fetch = async () => {
       try {
         const qs = await getPaperQuestions(paperId);
@@ -252,6 +255,8 @@ export default function PaperReview() {
             </button>
           )}
         </div>
+
+        {!loading && questions.length > 0 && !DEMO_MODE && <AnswerKeyUpload key={paperId} paperId={paperId} />}
 
         {/* Shift Filter Tabs if multi-shift */}
         {distinctShifts.length > 1 && (
