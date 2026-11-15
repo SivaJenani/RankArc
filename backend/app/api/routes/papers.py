@@ -4,6 +4,8 @@ import os
 from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
+from pathlib import Path
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,9 +27,8 @@ router = APIRouter(tags=["papers"])
 _ALLOWED_CONTENT_TYPES = {
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    "application/msword",
 }
-_ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc"}
+_ALLOWED_EXTENSIONS = {".pdf", ".docx"}
 _MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 
 
@@ -83,7 +84,7 @@ async def upload_paper(
     content_type_ok = file.content_type in _ALLOWED_CONTENT_TYPES
     ext_ok = ext in _ALLOWED_EXTENSIONS
 
-    if not content_type_ok and not ext_ok:
+    if not ext_ok:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Only PDF and DOCX files are supported.",
@@ -92,6 +93,8 @@ async def upload_paper(
     file.file.seek(0, os.SEEK_END)
     file_size = file.file.tell()
     file.file.seek(0)
+    if file_size == 0:
+        raise HTTPException(status_code=422, detail="The file is empty.")
     if file_size > _MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -155,25 +158,16 @@ async def get_paper_meta(
     rows = result.all()
     stored_counts = {r[0]: r[1] for r in rows if r[0]}
 
-    ordered_sets = []
-    meta_sets = meta.get("paper_sets") or []
-    for ms in meta_sets:
-        lbl = ms.get("label")
-        if lbl in stored_counts:
-            ordered_sets.append({"label": lbl, "q_count": stored_counts[lbl]})
-        else:
-            ordered_sets.append({"label": lbl, "q_count": ms.get("q_count", 100)})
-
-    if not ordered_sets and rows:
-        ordered_sets = [{"label": r[0] or "Paper 1", "q_count": r[1]} for r in rows]
-
+    ordered_sets = [{"label": r[0] or "Paper 1", "q_count": r[1]} for r in rows]
     return {
-        "paper_id": paper.id,
-        "title": paper.title,
+        "paper_id": paper.id, "title": paper.title,
         "exam_title": meta.get("exam_title") or paper.title,
         "categories": meta.get("categories") or [],
-        "paper_sets": ordered_sets if ordered_sets else [{"label": "Paper 1", "q_count": len(rows)}],
+        "paper_sets": ordered_sets,
         "duration_minutes": meta.get("duration_minutes"),
+        "warnings": meta.get("warnings", []),
+        "extraction_method": meta.get("extraction_method"),
+        "unkeyed_questions": meta.get("unkeyed_questions", 0),
     }
 
 
@@ -236,34 +230,41 @@ async def update_question(
     if not question:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Question not found")
 
+    from app.models.attempt import AttemptAnswer
+    used = (await db.execute(select(AttemptAnswer.id).where(AttemptAnswer.question_id == question.id).limit(1))).first()
+    if used:
+        raise HTTPException(status_code=409, detail="This question has recorded attempts. Upload a revised paper to preserve past results.")
+    opts_result = await db.execute(select(Option).where(Option.question_id == question.id))
+    old_options = {o.id: o for o in opts_result.scalars().all()}
+    correct_id = payload.correct_option_id if "correct_option_id" in payload.model_fields_set else question.correct_option_id
+    if correct_id is not None and correct_id not in old_options:
+        raise HTTPException(status_code=422, detail="Correct answer must belong to this question.")
+    if payload.options is not None:
+        incoming = payload.options
+        if not 2 <= len(incoming) <= 5 or [o.label for o in incoming] != list("ABCDE"[:len(incoming)]):
+            raise HTTPException(status_code=422, detail="Options must be ordered A-D, A-E or another complete A-starting sequence.")
+        ids = [o.id for o in incoming]
+        if any(i is None or i not in old_options for i in ids) or len(set(ids)) != len(ids) or set(ids) != set(old_options):
+            raise HTTPException(status_code=422, detail="Option identities must match the existing question.")
+        for item in incoming:
+            if not item.option_text.strip():
+                raise HTTPException(status_code=422, detail="Option text cannot be empty.")
+        for item in incoming:
+            option = old_options[item.id]
+            option.label = item.label
+            option.option_text = item.option_text
+            option.is_correct = option.id == correct_id
+    else:
+        for option in old_options.values():
+            option.is_correct = option.id == correct_id
     if payload.question_text is not None:
+        if not payload.question_text.strip():
+            raise HTTPException(status_code=422, detail="Question text cannot be empty.")
         question.question_text = payload.question_text
     if payload.explanation is not None:
         question.explanation = payload.explanation
-    if payload.correct_option_id is not None:
-        question.correct_option_id = payload.correct_option_id
+    question.correct_option_id = correct_id
     question.updated_at = datetime.utcnow()
-
-    if payload.options is not None:
-        opts_result = await db.execute(select(Option).where(Option.question_id == question.id))
-        for old_opt in opts_result.scalars().all():
-            await db.delete(old_opt)
-
-        new_correct_id: int | None = None
-        for opt_data in payload.options:
-            new_opt = Option(
-                question_id=question.id,
-                label=opt_data.label,
-                option_text=opt_data.option_text,
-                is_correct=opt_data.is_correct,
-            )
-            db.add(new_opt)
-            await db.flush()
-            if new_opt.is_correct:
-                new_correct_id = new_opt.id
-
-        if new_correct_id and payload.correct_option_id is None:
-            question.correct_option_id = new_correct_id
 
     await db.commit()
     await db.refresh(question)
@@ -279,6 +280,8 @@ async def update_question(
         "question_type": question.question_type,
         "explanation": question.explanation,
         "correct_option_id": question.correct_option_id,
+        "image_url": question.image_url,
+        "paper_set": question.paper_set,
         "options": opts,
     })
 
@@ -297,20 +300,14 @@ async def get_paper_status(
         return {"status": "ready", "progress": 100, "step": "Done! Paper is ready."}
 
     if paper.status == "failed":
-        return {"status": "failed", "progress": 0, "step": "Processing failed."}
+        meta = json.loads(paper.meta or "{}")
+        return {"status": "failed", "progress": 0, "step": meta.get("processing_error", "Processing failed. Please upload a valid PDF or DOCX.")}
 
-    # Paper is 'processing' or 'uploading' — check if in-memory progress exists
     mem_progress = progress_info.get("progress", 0)
     mem_step = progress_info.get("step", "")
-
-    # If no in-memory progress (e.g. server restarted mid-job), the background
-    # task is gone. Mark the paper failed so the frontend can recover cleanly.
-    if mem_progress == 0 and paper.status == "processing":
-        # Auto-recover: mark as failed so the user is prompted to re-upload
-        paper.status = "failed"
-        paper.updated_at = datetime.utcnow()
-        await db.commit()
-        return {"status": "failed", "progress": 0, "step": "Server restarted during processing. Please upload again."}
+    if not mem_progress and paper.status == "processing":
+        return {"status": "failed", "progress": 0,
+                "step": "Processing was interrupted by a server restart. This upload is unchanged; please upload again."}
 
     return {
         "status": paper.status,
@@ -328,9 +325,22 @@ async def _get_owned_paper(paper_id: int, user_id: int, db: AsyncSession) -> Pap
     paper: Paper | None = result.scalar_one_or_none()
     if not paper:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paper not found")
-    if paper.owner_id is None:
-        paper.owner_id = user_id
-        await db.commit()
-    elif paper.owner_id != user_id:
+    if paper.owner_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     return paper
+
+
+@router.get("/{paper_id}/assets/{filename}")
+async def get_question_asset(paper_id: int, filename: str,
+    current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await _get_owned_paper(paper_id, current_user.id, db)
+    if Path(filename).name != filename:
+        raise HTTPException(status_code=404, detail="Image not found")
+    image_url = f"/api/papers/{paper_id}/assets/{filename}"
+    found = (await db.execute(select(Question.id).where(Question.paper_id == paper_id, Question.image_url == image_url).limit(1))).first()
+    if not found:
+        raise HTTPException(status_code=404, detail="Image not found")
+    path = Path(get_settings().upload_dir) / "questions" / filename
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Image no longer available. This preview uses temporary storage.")
+    return FileResponse(path, media_type="image/png", headers={"Cache-Control": "private, no-store"})
