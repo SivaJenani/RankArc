@@ -32,12 +32,22 @@ def extract_scanned_paper(pdf_path, paper_id, upload_dir, progress=None):
                 progress(15 + int(60 * pno / max(len(doc), 1)), f"Reading scanned page {pno + 1}/{len(doc)} with local OCR")
             pix = page.get_pixmap(matrix=fitz.Matrix(2.5, 2.5), alpha=False)
             image = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-            try:
-                data = pytesseract.image_to_data(image, config="--psm 6", output_type=pytesseract.Output.DICT, timeout=90)
-            except Exception as exc:
-                raise ValueError("This scan needs local Tesseract OCR. Install it on the server or upload a searchable PDF/DOCX.") from exc
-            words = [(data["text"][i].strip(), data["left"][i], data["top"][i], data["width"][i], data["height"][i], float(data["conf"][i]))
-                     for i in range(len(data["text"])) if data["text"][i].strip()]
+            # Searchable graphics PDFs retain their native text coordinates, avoiding
+            # OCR damage. Scanned pages use the same boundary/crop pipeline.
+            native = page.get_text("words", sort=True)
+            native_text = " ".join(w[4] for w in native)
+            if len(re.sub(r"\s", "", native_text)) >= 40 and "\ufffd" not in native_text:
+                scale_x, scale_y = image.width / page.rect.width, image.height / page.rect.height
+                words = [(w[4].strip(), int(w[0]*scale_x), int(w[1]*scale_y),
+                          int((w[2]-w[0])*scale_x), int((w[3]-w[1])*scale_y), 100.0)
+                         for w in native if w[4].strip()]
+            else:
+                try:
+                    data = pytesseract.image_to_data(image, config="--psm 6", output_type=pytesseract.Output.DICT, timeout=90)
+                except Exception as exc:
+                    raise ValueError(f"Page {pno + 1} could not be read with local OCR. Upload a clearer scan or searchable PDF.") from exc
+                words = [(data["text"][i].strip(), data["left"][i], data["top"][i], data["width"][i], data["height"][i], float(data["conf"][i]))
+                         for i in range(len(data["text"])) if data["text"][i].strip()]
             text = " ".join(w[0] for w in words)
             if pno == 0:
                 if re.search(r"duration\s*:?\s*three\s*hours", text, re.I):
@@ -81,17 +91,20 @@ def extract_scanned_paper(pdf_path, paper_id, upload_dir, progress=None):
                 filename = uuid.uuid4().hex + ".png"
                 crop.save(output / filename, optimize=True)
                 segment = " ".join(w[0] for w in words if y - 5 <= w[2] < end)
-                labels = set(re.findall(r"\(([A-E])\)", segment))
+                labels = set(re.findall(r"(?:\(([A-E])\)|\b([A-E])[.)])", segment))
+                labels = {label for pair in labels for label in pair if label}
                 # A-E exams often have marked/overwritten letters. An explicit E or
                 # the printed 'Answer not known' fifth choice establishes five options.
                 if not ("D" in labels or "E" in labels or re.search(r"answer\s+not\s+known", segment, re.I)):
                     raise ValueError(f"Could not verify the option count for question {number}. Upload a clearer scan.")
+                key_match = re.search(r"\b(?:correct\s+answer|answer|ans)\s*[:.=-]\s*\(?([A-E])\)?\b", segment, re.I)
+                key = key_match[1].upper() if key_match else None
                 count = 5 if "E" in labels or re.search(r"answer\s+not\s+known", segment, re.I) else 4
                 all_questions.append({"question_number": number,
                     "question_text": f"Question {number} (original scan). Enlarge the image to read the wording and all options.",
                     "question_type": "mcq", "paper_set": "Paper 1",
                     "image_url": f"/api/papers/{paper_id}/assets/{filename}",
-                    "options": [{"label": chr(65 + j), "option_text": f"{chr(65 + j)} - see original scan", "is_correct": False} for j in range(count)],
+                    "options": [{"label": chr(65 + j), "option_text": f"{chr(65 + j)} - see original scan", "is_correct": chr(65 + j) == key} for j in range(count)],
                     "explanation": None})
             ocr_pages.append({"page": pno + 1, "questions": len(candidates)})
         if not all_questions:
@@ -99,9 +112,9 @@ def extract_scanned_paper(pdf_path, paper_id, upload_dir, progress=None):
     n = len(all_questions)
     meta = {"exam_title": title, "paper_sets": [{"label": "Paper 1", "q_count": n}],
             "categories": [{"name": "Scanned questions", "count": n, "q_start": 1, "q_end": n}],
-            "duration_minutes": duration, "unkeyed_questions": n,
+            "duration_minutes": duration, "unkeyed_questions": sum(not any(o["is_correct"] for o in q["options"]) for q in all_questions),
             "extraction_method": "local-tesseract-source-crops", "source_pages": ocr_pages,
             "warnings": ["Scan mode preserves original wording, tables and diagrams as images. Check every boundary and option count in Review.",
-                         "The source contains visible marks. These remain in the image and may reveal answers. Use a clean unmarked paper for a realistic test.",
-                         "No verified answer key was supplied. This is unscored practice until correct answers are marked in Review."]}
+                         "Any visible source marks remain in the image and may reveal answers. Use a clean unmarked paper for a realistic test.",
+                         "Only explicit printed Answer/Ans labels are read as keys. Check them in Review. Unkeyed questions are unscored; handwritten marks are never a key."]}
     return meta, all_questions
