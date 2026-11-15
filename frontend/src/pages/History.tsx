@@ -106,11 +106,11 @@ export default function History() {
                         </td>
                         <td className="px-5 py-4">
                           <span className="font-bold text-fg text-sm">
-                            {correct} / {item.total_questions}
+                            {item.score === null ? "Unscored practice" : `${correct} / ${item.total_questions}`}
                           </span>
                         </td>
                         <td className="px-5 py-4">
-                          <ScoreBadge percentage={pct} />
+                          {item.score === null ? <span className="text-sm text-muted">Unscored</span> : <ScoreBadge percentage={pct} />}
                         </td>
                         <td className="px-5 py-4">
                           <span className="text-sm text-muted">
@@ -160,10 +160,10 @@ export default function History() {
                   <div key={item.id} className="bg-card/80 backdrop-blur border border-fg/10 rounded-2xl p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <p className="font-bold text-fg text-sm flex-1">{item.paper_title}</p>
-                      <ScoreBadge percentage={pct} />
+                      {item.score === null ? <span className="text-sm text-muted">Unscored</span> : <ScoreBadge percentage={pct} />}
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted">
-                      <span><strong className="text-fg">{correct}/{item.total_questions}</strong> correct</span>
+                      <span>{item.score === null ? "Unscored practice" : `${correct}/${item.total_questions} correct`}</span>
                       {timeTaken > 0 && <span>{formatDuration(timeTaken)}</span>}
                       <span>{item.submitted_at ? formatDate(item.submitted_at) : formatDate(item.started_at)}</span>
                     </div>
