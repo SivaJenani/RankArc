@@ -72,6 +72,8 @@ def extract_text_from_docx(file_path: str) -> str:
     from docx.table import Table
     from docx.text.paragraph import Paragraph
     doc = Document(file_path)
+    if doc.inline_shapes:
+        raise ValueError("This DOCX contains images. Export it to PDF and upload that PDF to preserve the images.")
     chunks = []
     # Preserve paragraphs and tables in their original order, including merged cells.
     for child in doc.element.body.iterchildren():
