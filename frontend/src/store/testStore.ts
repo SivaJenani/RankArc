@@ -77,7 +77,8 @@ export const useTestStore = create<TestState & TestActions>((set) => ({
   },
 }));
 
-// Keep demo refreshes isolated from any real test in the same browser tab.
-if (DEMO_MODE) useTestStore.subscribe(state => {
-  sessionStorage.setItem(TEST_STORAGE_KEY, JSON.stringify(state));
+// Persist both real and sample progress, under separate keys.
+useTestStore.subscribe(state => {
+  if (state.attemptId === null) sessionStorage.removeItem(TEST_STORAGE_KEY);
+  else sessionStorage.setItem(TEST_STORAGE_KEY, JSON.stringify(state));
 });
