@@ -25,8 +25,8 @@ export default function Landing() {
             </>
           ) : (
             <>
-              <Link to="/register">
-                <button>Get started free <span>→</span></button>
+              <Link to="/dashboard">
+                <button>Explore Rankly <span>→</span></button>
               </Link>
               <Link to="/login">
                 <button className="secondary">Sign in</button>
@@ -61,4 +61,3 @@ export default function Landing() {
     </main>
   );
 }
-
