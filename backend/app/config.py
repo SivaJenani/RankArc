@@ -1,5 +1,7 @@
 import os
 from functools import lru_cache
+import secrets
+from pydantic import Field
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,7 +21,7 @@ class Settings(BaseSettings):
     backend_cors_origins: str = "http://localhost:5173"
 
     # Auth
-    secret_key: str = "changeme-in-production-use-32-chars"
+    secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32))
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 10080  # 7 days
 
