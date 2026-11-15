@@ -1,0 +1,11 @@
+.git
+**/node_modules
+**/dist
+**/.env*
+**/*.db*
+**/uploads
+**/__pycache__
+**/.venv
+**/*.pdf
+**/*.png
+**/*.jpg
