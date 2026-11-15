@@ -38,7 +38,7 @@ function AnswerCard({ item, index }: { item: ResultQuestion; index: number }) {
       {/* Header */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-start gap-3 p-4 text-left hover:opacity-90 transition-opacity"
+        className="w-full flex items-start gap-3 p-4 text-left !bg-transparent hover:opacity-90 transition-opacity"
       >
         <span className="shrink-0 w-7 h-7 bg-nav text-accent rounded-lg text-xs font-black flex items-center justify-center border border-deeptext">
           {index + 1}
