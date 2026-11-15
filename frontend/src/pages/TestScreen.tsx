@@ -67,6 +67,7 @@ function TestScreenInner() {
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loadedImageSrc, setLoadedImageSrc] = useState<string | null>(null);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
   const questionStartRef = useRef<number>(Date.now());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -133,7 +134,7 @@ function TestScreenInner() {
   }, [currentIndex, questions, addTimeSpent]);
 
   const handleOptionSelect = (optionId: number) => {
-    if (isSubmitting) return;
+    if (isSubmitting || (currentQuestion?.image_url && loadedImageSrc !== currentQuestion.image_url)) return;
     const qId = questions[currentIndex]?.id;
     if (qId) setAnswer(qId, optionId);
   };
@@ -249,6 +250,8 @@ function TestScreenInner() {
                   className="group relative cursor-zoom-in p-1 md:p-4 bg-card rounded-2xl border-2 border-fg/10 hover:border-accent shadow-sm max-w-3xl transition-all"
                 >
                   <PrivateImage
+                    key={currentQuestion.image_url}
+                    onLoad={() => setLoadedImageSrc(currentQuestion.image_url ?? null)}
                     src={currentQuestion.image_url}
                     alt={`Question ${currentIndex + 1} diagram`}
                     className="w-full h-auto object-contain rounded-lg"
@@ -266,6 +269,7 @@ function TestScreenInner() {
             )}
 
             {/* Options */}
+            {currentQuestion.image_url && loadedImageSrc !== currentQuestion.image_url && <p className="text-sm text-muted mb-3">Wait for the original question to load before choosing an answer.</p>}
             <div className="space-y-3 ml-11">
               {currentQuestion.options.map((opt, i) => {
                 const isSelected = selectedOptionId === opt.id;
@@ -273,8 +277,8 @@ function TestScreenInner() {
                   <button
                     key={opt.id}
                     onClick={() => handleOptionSelect(opt.id)}
-                    disabled={isSubmitting}
-                    className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
+                    disabled={isSubmitting || (!!currentQuestion.image_url && loadedImageSrc !== currentQuestion.image_url)}
+                    className={`w-full disabled:opacity-50 flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
                       isSelected
                         ? 'border-accent bg-accent/15'
                         : 'border-fg/15 hover:border-accent/40 bg-card/70'
