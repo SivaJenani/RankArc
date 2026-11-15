@@ -100,7 +100,7 @@ export default function PaperSetPicker() {
                 {meta.exam_title || meta.title}
               </h1>
               <p className="text-sm text-invfg/70 font-medium">
-                Multiple paper shifts detected in uploaded document.
+                {paperSetsCount > 1 ? "Multiple paper sets detected." : "One paper set is available. Review it before starting."}
               </p>
             </div>
 
@@ -135,6 +135,7 @@ export default function PaperSetPicker() {
           </div>
         </div>
 
+        {meta.warnings?.length ? <aside className="bg-card border border-accent rounded-2xl p-5 space-y-2" aria-label="Extraction notes"><h2 className="text-lg font-bold text-fg">Review this extraction</h2>{meta.warnings.map((warning, i) => <p key={i} className="text-sm text-fg">{warning}</p>)}</aside> : null}
         {/* 1. Category Topics & Distribution Summary Table */}
         {categories.length > 0 && (
           <div className="bg-card rounded-3xl p-6 md:p-8 border border-fg/10 shadow-lg">
@@ -156,9 +157,9 @@ export default function PaperSetPicker() {
                   <tr className="bg-nav text-invfg">
                     <th className="py-3.5 px-4 font-black text-xs uppercase tracking-wider">Category Title</th>
                     <th className="py-3.5 px-4 font-black text-xs uppercase tracking-wider text-center">Question Numbers</th>
-                    <th className="py-3.5 px-4 font-black text-xs uppercase tracking-wider text-center">Per Paper</th>
+                    <th className="py-3.5 px-4 font-black text-xs uppercase tracking-wider text-center">Extracted</th>
                     <th className="py-3.5 px-4 font-black text-xs uppercase tracking-wider text-right text-accent">
-                      Total ({paperSetsCount} Papers)
+                      Total
                     </th>
                   </tr>
                 </thead>
@@ -172,13 +173,13 @@ export default function PaperSetPicker() {
                         {cat.name}
                       </td>
                       <td className="py-3.5 px-4 text-center font-semibold text-muted">
-                        {cat.q_start}–{cat.q_end}
+                        {cat.q_start && cat.q_end ? `${cat.q_start}-${cat.q_end}` : "See Review"}
                       </td>
                       <td className="py-3.5 px-4 text-center font-bold text-fg">
                         {cat.count}
                       </td>
                       <td className="py-3.5 px-4 text-right font-black text-deeptext">
-                        {cat.count * paperSetsCount}
+                        {cat.count}
                       </td>
                     </tr>
                   ))}
@@ -194,7 +195,7 @@ export default function PaperSetPicker() {
                       {categories.reduce((acc, c) => acc + c.count, 0)}
                     </td>
                     <td className="py-4 px-4 text-right text-accent font-black text-base">
-                      {categories.reduce((acc, c) => acc + c.count, 0) * paperSetsCount}
+                      {categories.reduce((acc, c) => acc + c.count, 0)}
                     </td>
                   </tr>
                 </tbody>
@@ -238,7 +239,7 @@ export default function PaperSetPicker() {
                         {ps.label}
                       </p>
                       <p className="text-xs font-semibold text-muted mt-0.5">
-                        {ps.q_count || 100} Questions · 4 Sections
+                        {ps.q_count} Questions
                       </p>
                     </div>
                   </div>
@@ -249,7 +250,7 @@ export default function PaperSetPicker() {
 
                 <div className="pt-2 border-t border-fg/5 flex items-center justify-between">
                   <span className="text-xs text-muted font-semibold">
-                    {meta.duration_minutes ? `⏱ ${meta.duration_minutes} min test` : 'Untimed'}
+                    {meta.duration_minutes ? `⏱ ${meta.duration_minutes} min test` : '1 minute per question (default)'}
                   </span>
                   <button
                     onClick={() => handleStartSet(ps.label)}
