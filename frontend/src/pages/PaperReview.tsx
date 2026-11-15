@@ -1,3 +1,4 @@
+import PrivateImage from '../components/PrivateImage';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -36,14 +37,15 @@ function QuestionEditor({
     try {
       const updated = await updateQuestion(paperId, question.id, {
         text: edit.text,
-        options: edit.options.map((o) => ({ id: o.id, text: o.text })),
+        options: edit.options.map((o) => ({ id: o.id, text: o.text, label: o.label })),
         correct_option_id: edit.correct_option_id,
       });
+      setEdit({ text: updated.text, options: updated.options.map(o => ({id:o.id,text:o.text,label:o.label})), correct_option_id: updated.correct_option_id });
       onUpdated(updated);
       setEditing(false);
       toast.success('Question updated!');
-    } catch {
-      toast.error('Failed to save question.');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to save question.');
     } finally {
       setSaving(false);
     }
@@ -93,14 +95,14 @@ function QuestionEditor({
       {/* Question Diagram / Image if present */}
       {question.image_url && (
         <div className="mb-4 ml-10 p-3 bg-card rounded-2xl border-2 border-fg/10 max-w-2xl shadow-sm">
-          <a href={question.image_url} target="_blank" rel="noreferrer" title="Click to view full image in new tab">
-            <img
+          <div>
+            <PrivateImage
               src={question.image_url}
               alt={`Question ${question.number} diagram`}
-              className="max-h-72 w-auto max-w-full object-contain rounded-lg hover:opacity-95 transition-opacity"
+              className="w-full h-auto max-w-full object-contain rounded-lg hover:opacity-95 transition-opacity"
               loading="lazy"
             />
-          </a>
+          </div>
         </div>
       )}
 
