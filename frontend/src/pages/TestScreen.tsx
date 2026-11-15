@@ -190,7 +190,7 @@ function TestScreenInner() {
   return (
     <div className="min-h-screen bg-page flex flex-col">
       {/* Top bar */}
-      <div className="sticky top-0 z-40 bg-nav border-b border-deeptext">
+      <div className="relative z-40 bg-nav border-b border-deeptext">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="text-invfg font-bold text-sm">
