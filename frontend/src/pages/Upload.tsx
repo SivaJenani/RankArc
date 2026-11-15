@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import UploadZone from '../components/UploadZone';
 import { uploadPaper, getPaperStatus } from '../api/papers';
 
-const STUCK_TIMEOUT_MS = 45_000; // 45s without progress = stuck
+const STUCK_TIMEOUT_MS = 300_000; // 45s without progress = stuck
 
 export default function Upload() {
   const [file, setFile] = useState<File | null>(null);
@@ -59,7 +59,7 @@ export default function Upload() {
         } else if (Date.now() - lastProgressTimeRef.current > STUCK_TIMEOUT_MS) {
           // No progress for 45s — something is wrong
           clearInterval(intervalRef.current!);
-          setStuckError('Processing seems stuck. The server may have restarted. Please try uploading again.');
+          setStuckError('No processing update for five minutes. Your upload may still be queued. Check My Papers before uploading again.');
           setPollingStatus('failed');
           return;
         }
@@ -74,16 +74,18 @@ export default function Upload() {
           navigate(`/papers/${paperId}/sets`);
         } else if (res.status === 'failed') {
           clearInterval(intervalRef.current!);
-          const errMsg = res.step?.includes('restart')
-            ? res.step
-            : 'Processing failed. Please try uploading again.';
+          const errMsg = res.step || 'Processing failed. Please try uploading again.';
           setStuckError(errMsg);
           toast.error(errMsg);
         }
       } catch {
-        // silent poll error – network blip, keep trying
+        if (Date.now() - lastProgressTimeRef.current > STUCK_TIMEOUT_MS) {
+          clearInterval(intervalRef.current!);
+          setStuckError('Cannot reach the processing server. Your upload may still be processing. Check My Papers before uploading again.');
+          setPollingStatus('failed');
+        }
       }
-    }, 1500);
+    }, 3000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
