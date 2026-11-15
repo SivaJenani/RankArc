@@ -72,7 +72,7 @@ function QuestionEditor({
           <textarea
             value={edit.text}
             onChange={(e) => setEdit((s) => ({ ...s, text: e.target.value }))}
-            className="flex-1 px-3 py-2 rounded-xl border border-accent bg-card text-fg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent min-h-[80px] resize-y"
+            className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-accent bg-card text-fg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent min-h-[80px] resize-y"
           />
         ) : (
           <p className="flex-1 text-fg font-medium text-sm leading-relaxed">{question.text}</p>
@@ -139,7 +139,7 @@ function QuestionEditor({
                       ),
                     }))
                   }
-                  className="flex-1 text-sm bg-transparent border-none focus:outline-none text-fg font-medium"
+                  className="flex-1 min-w-0 w-full text-sm bg-transparent border-none focus:outline-none text-fg font-medium"
                 />
               ) : (
                 <span className="flex-1 text-sm text-fg font-medium">{opt.text}</span>
