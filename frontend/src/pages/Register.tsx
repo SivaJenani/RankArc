@@ -30,7 +30,7 @@ export default function Register() {
       localStorage.setItem('rankly_token', access_token);
       const user = await getMe();
       login(access_token, user);
-      toast.success(`Welcome to Rankly, ${user.name}!`);
+      toast.success(`Welcome to RankArc, ${user.name}!`);
       navigate('/dashboard');
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Registration failed. Try again.');
@@ -50,7 +50,7 @@ export default function Register() {
             </div>
           </div>
           <h1 className="text-3xl font-black text-[#000000] tracking-tight">Create account</h1>
-          <p className="text-[#555555] mt-2 font-medium">Join Rankly and start practicing</p>
+          <p className="text-[#555555] mt-2 font-medium">Join RankArc and start practicing</p>
         </div>
 
         {/* Card */}
