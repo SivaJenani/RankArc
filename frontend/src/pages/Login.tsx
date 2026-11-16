@@ -44,7 +44,7 @@ export default function Login() {
             </div>
           </div>
           <h1 className="text-3xl font-black text-fg tracking-tight">Welcome back</h1>
-          <p className="text-muted mt-2 font-medium">Sign in to your Rankly account</p>
+          <p className="text-muted mt-2 font-medium">Sign in to your RankArc account</p>
         </div>
 
         {/* Card */}
