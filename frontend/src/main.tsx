@@ -20,7 +20,7 @@ import { DEMO_MODE, resetDemo } from './api/demo';
 
 function DemoNavbar() {
   return <><nav className="bg-nav text-invfg border-b border-deeptext px-4 py-3"><div className="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-3">
-    <Link to="/" className="font-black text-xl text-accent">rankly <span className="text-sm text-invfg">sample demo</span></Link>
+    <Link to="/" className="font-black text-xl text-accent">RankArc <span className="text-sm text-invfg">sample demo</span></Link>
     <div className="flex items-center gap-4 text-sm"><ThemeToggle/><Link to="/dashboard">My Papers</Link><Link to="/history">History</Link></div>
   </div></nav><aside className="bg-accent/10 border-b border-accent/30 text-fg px-4 py-3 text-xs"><div className="max-w-5xl mx-auto flex flex-wrap gap-3 justify-between items-center"><p className="max-w-3xl">SAMPLE DEMO: synthetic questions only. No login, AI extraction, server uploads or personal data. Demo edits and results stay in this tab. Closing the tab or resetting clears them.</p><button onClick={resetDemo} className="text-deeptext border border-deeptext rounded-lg px-3 py-2">Reset demo</button></div></aside></>;
 }
