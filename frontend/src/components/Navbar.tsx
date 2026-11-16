@@ -19,7 +19,7 @@ export default function Navbar() {
           <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center font-black text-onaccent text-lg group-hover:scale-105 transition-transform">
             R
           </div>
-          <span className="text-invfg font-extrabold text-lg tracking-tight">rankly</span>
+          <span className="text-invfg font-extrabold text-lg tracking-tight">RankArc</span>
         </Link>
 
         {/* Nav Links */}
