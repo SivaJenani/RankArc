@@ -15,7 +15,7 @@ class Settings(BaseSettings):
         env_file=[str(BACKEND_DIR / ".env"), ".env"],
         extra="ignore",
     )
-    app_name: str = "Rankly API"
+    app_name: str = "RankArc API"
     database_url: str = f"sqlite+aiosqlite:///{DB_PATH}"
     redis_url: str = "redis://localhost:6379/0"
     backend_cors_origins: str = "http://localhost:5173"
