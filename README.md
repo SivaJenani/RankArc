@@ -1,6 +1,6 @@
-# Rankly
+# RankArc
 
-Rankly turns previous-year competitive exam papers into timed, verifiable mock tests.
+RankArc turns previous-year competitive exam papers into timed, verifiable mock tests.
 
 M0 provides the FastAPI health endpoint, async SQLAlchemy models, PostgreSQL/Alembic setup, seed data for NEET/JEE Main/SSC CGL, Redis infrastructure, and a React/Vite/TypeScript frontend shell.
 
