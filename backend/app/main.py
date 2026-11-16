@@ -29,6 +29,9 @@ app.include_router(auth_router, prefix="/api/auth")
 app.include_router(papers_router, prefix="/api/papers")
 app.include_router(attempts_router, prefix="/api/attempts")
 
+from app.api.routes.battles import router as battles_router
+app.include_router(battles_router, prefix='/api/battles')
+
 # Uploaded documents and question crops are private, served only by owner-checked routes.
 
 # The separate repair preview serves the built UI and API on one free service.
