@@ -9,7 +9,7 @@ export default function PrivateImage({ src, ...props }: ImgHTMLAttributes<HTMLIm
     let objectUrl: string | undefined;
     setUrl(undefined); setError(false);
     if (!src) return;
-    if (!src.startsWith('/api/papers/')) { setUrl(src); return; }
+    if (!src.startsWith('/api/papers/') && !src.startsWith('/api/battles/')) { setUrl(src); return; }
     client.get(src, { responseType: 'blob' }).then(({ data }) => {
       if (!active) return;
       objectUrl = URL.createObjectURL(data);
