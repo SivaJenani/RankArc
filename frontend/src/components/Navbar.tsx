@@ -13,7 +13,7 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 bg-nav border-b border-deeptext shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-14 py-3 flex flex-wrap gap-3 items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group">
           <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center font-black text-onaccent text-lg group-hover:scale-105 transition-transform">
@@ -23,8 +23,9 @@ export default function Navbar() {
         </Link>
 
         {/* Nav Links */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap justify-end items-center gap-3">
           <ThemeToggle />
+          {token && <Link className="text-invfg text-sm" to="/battle">Battle</Link>}
           {token ? (
             <>
               <Link
