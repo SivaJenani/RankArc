@@ -10,7 +10,7 @@ export default function Landing() {
         <p className="eyebrow">PRACTICE WITH PRECISION</p>
         <h1>Your paper.<br /><em>Your rank.</em></h1>
         <p className="lede">
-          Rankly turns exam papers into timed, honest mock tests with AI-powered question
+          RankArc turns exam papers into timed, honest mock tests with AI-powered question
           extraction and scoring you can trust.
         </p>
         <div className="actions">
@@ -26,7 +26,7 @@ export default function Landing() {
           ) : (
             <>
               <Link to="/dashboard">
-                <button>Explore Rankly <span>→</span></button>
+                <button>Explore RankArc <span>→</span></button>
               </Link>
               <Link to="/login">
                 <button className="secondary">Sign in</button>
@@ -36,7 +36,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="preview" aria-label="Rankly product preview">
+      <section className="preview" aria-label="RankArc product preview">
         <div>
           <span className="kicker">NEET · 2024</span>
           <span className="ready">READY</span>
