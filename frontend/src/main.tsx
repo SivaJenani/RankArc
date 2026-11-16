@@ -6,6 +6,7 @@ import './styles.css';
 import Navbar from './components/Navbar';
 import ThemeToggle from './components/ThemeToggle';
 import ProtectedRoute from './components/ProtectedRoute';
+import Battle from './pages/Battle';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -44,6 +45,7 @@ function App() {
     <Route path="/papers/:paperId/sets" element={<PaperSetPicker/>}/><Route path="/papers/:id/review" element={<PaperReview/>}/>
     <Route path="/test/:attemptId" element={<TestScreen/>}/><Route path="/results/:attemptId" element={<Results/>}/><Route path="/history" element={<History/>}/>
    </> : <Route element={<ProtectedRoute/>}>
+    <Route path="/battle" element={<Battle/>}/><Route path="/battle/:code" element={<Battle/>}/>
     <Route path="/dashboard" element={<Dashboard/>}/><Route path="/upload" element={<Upload/>}/>
     <Route path="/papers/:paperId/sets" element={<PaperSetPicker/>}/><Route path="/papers/:id/review" element={<PaperReview/>}/>
     <Route path="/test/:attemptId" element={<TestScreen/>}/><Route path="/results/:attemptId" element={<Results/>}/><Route path="/history" element={<History/>}/>
