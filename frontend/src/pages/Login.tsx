@@ -34,44 +34,44 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EEEEEE] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-page flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-12 h-12 bg-[#000000] rounded-2xl flex items-center justify-center font-black text-[#08CB00] text-2xl border border-[#253900] shadow-md">
+            <div className="w-12 h-12 bg-nav rounded-2xl flex items-center justify-center font-black text-accent text-2xl border border-deeptext shadow-md">
               R
             </div>
           </div>
-          <h1 className="text-3xl font-black text-[#000000] tracking-tight">Welcome back</h1>
-          <p className="text-[#555555] mt-2 font-medium">Sign in to your RankArc account</p>
+          <h1 className="text-3xl font-black text-fg tracking-tight">Welcome back</h1>
+          <p className="text-muted mt-2 font-medium">Sign in to your RankArc account</p>
         </div>
 
         {/* Card */}
         <form
           onSubmit={handleSubmit}
-          className="bg-white/90 backdrop-blur border border-[#000000]/10 rounded-3xl p-8 shadow-xl space-y-5"
+          className="bg-card/90 backdrop-blur border border-fg/10 rounded-3xl p-8 shadow-xl space-y-5"
         >
           <div>
-            <label className="block text-sm font-bold text-[#000000] mb-1.5">Email</label>
+            <label className="block text-sm font-bold text-fg mb-1.5">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-4 py-3 rounded-xl border border-[#000000]/20 bg-white focus:outline-none focus:ring-2 focus:ring-[#08CB00] focus:border-[#253900] text-[#000000] placeholder-[#555555]/60 font-medium transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-fg/20 bg-card focus:outline-none focus:ring-2 focus:ring-accent focus:border-deeptext text-fg placeholder-muted/60 font-medium transition-all"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-[#000000] mb-1.5">Password</label>
+            <label className="block text-sm font-bold text-fg mb-1.5">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-xl border border-[#000000]/20 bg-white focus:outline-none focus:ring-2 focus:ring-[#08CB00] focus:border-[#253900] text-[#000000] font-medium transition-all"
+              className="w-full px-4 py-3 rounded-xl border border-fg/20 bg-card focus:outline-none focus:ring-2 focus:ring-accent focus:border-deeptext text-fg font-medium transition-all"
               required
             />
           </div>
@@ -79,11 +79,11 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-[#08CB00] hover:bg-[#07b000] text-[#000000] font-black rounded-xl transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full py-3.5 bg-accent hover:bg-accenth text-onaccent font-black rounded-xl transition-all shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2 justify-center">
-                <svg className="w-4 h-4 animate-spin text-[#000000]" fill="none" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 animate-spin text-fg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
@@ -94,9 +94,9 @@ export default function Login() {
             )}
           </button>
 
-          <p className="text-center text-sm text-[#555555]">
+          <p className="text-center text-sm text-muted">
             Don't have an account?{' '}
-            <Link to="/register" className="text-[#253900] font-black hover:text-[#08CB00] hover:underline">
+            <Link to="/register" className="text-deeptext font-black hover:text-accent hover:underline">
               Register
             </Link>
           </p>
