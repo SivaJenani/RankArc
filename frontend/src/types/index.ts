@@ -66,6 +66,9 @@ export interface PaperMeta {
   categories: PaperCategory[];
   paper_sets: PaperSetInfo[];
   duration_minutes: number | null;
+  warnings?: string[];
+  extraction_method?: string;
+  unkeyed_questions?: number;
 }
 
 /** Payload sent to submit endpoint */

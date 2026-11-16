@@ -37,7 +37,7 @@ async def start_attempt(
     # Verify paper exists
     paper_result = await db.execute(select(Paper).where(Paper.id == paper_id))
     paper: Paper | None = paper_result.scalar_one_or_none()
-    if not paper:
+    if not paper or paper.owner_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paper not found")
 
     # Fetch questions (optionally filtered by set)
@@ -54,6 +54,8 @@ async def start_attempt(
             detail="Paper has no questions yet. Wait for processing to complete.",
         )
 
+    if paper.status != "ready":
+        raise HTTPException(status_code=422, detail="This paper is not ready. Review processing status first.")
     # Create attempt
     attempt = Attempt(
         user_id=current_user.id,
@@ -65,6 +67,9 @@ async def start_attempt(
         updated_at=datetime.utcnow(),
     )
     db.add(attempt)
+    await db.flush()
+    for q in questions:
+        db.add(AttemptAnswer(attempt_id=attempt.id, question_id=q.id))
     await db.commit()
     await db.refresh(attempt)
 
@@ -77,7 +82,7 @@ async def start_attempt(
         opts = opts_result.scalars().all()
         # Hide is_correct and correct_option_id
         safe_opts = [
-            OptionRead(id=o.id, label=o.label, option_text=o.option_text, is_correct=False)
+            OptionRead(id=o.id, label=o.label, option_text=o.option_text, image_url=o.image_url, is_correct=False)
             for o in opts
         ]
         questions_out.append(
@@ -133,32 +138,38 @@ async def submit_attempt(
             detail="Attempt already submitted",
         )
 
-    correct_count = 0
-
+    recorded = (await db.execute(select(AttemptAnswer).where(AttemptAnswer.attempt_id == attempt.id))).scalars().all()
+    if not recorded or len(recorded) != attempt.total_questions:
+        raise HTTPException(status_code=409, detail="This attempt predates the safety update. Please start a new attempt.")
+    allowed = {answer.question_id: answer for answer in recorded}
+    ids = [answer.question_id for answer in payload.answers]
+    if len(ids) != len(set(ids)) or any(i not in allowed for i in ids):
+        raise HTTPException(status_code=422, detail="Answers must reference distinct questions from this attempt.")
+    question_rows = (await db.execute(select(Question).where(Question.id.in_(allowed), Question.paper_id == attempt.paper_id))).scalars().all()
+    questions = {q.id: q for q in question_rows}
+    if len(questions) != len(allowed):
+        raise HTTPException(status_code=409, detail="The source paper changed. Please start a new attempt.")
+    option_rows = (await db.execute(select(Option).where(Option.question_id.in_(allowed)))).scalars().all()
+    option_ids = {o.id: o.question_id for o in option_rows}
+    # Validate every answer before changing any row.
     for answer in payload.answers:
-        # Fetch question to get the correct_option_id
-        q_result = await db.execute(select(Question).where(Question.id == answer.question_id))
-        question: Question | None = q_result.scalar_one_or_none()
-        if not question:
-            continue
-
-        is_correct: bool | None = None
+        if answer.selected_option_id is not None and option_ids.get(answer.selected_option_id) != answer.question_id:
+            raise HTTPException(status_code=422, detail="Selected option does not belong to this question.")
+        if answer.time_spent_seconds is not None and answer.time_spent_seconds < 0:
+            raise HTTPException(status_code=422, detail="Time spent cannot be negative.")
+    correct_count = 0
+    for answer in payload.answers:
+        row = allowed[answer.question_id]
+        question = questions[answer.question_id]
+        row.selected_option_id = answer.selected_option_id
+        row.time_spent_seconds = answer.time_spent_seconds
+        row.is_correct = None
         if answer.selected_option_id is not None and question.correct_option_id is not None:
-            is_correct = answer.selected_option_id == question.correct_option_id
-            if is_correct:
-                correct_count += 1
-
-        attempt_answer = AttemptAnswer(
-            attempt_id=attempt.id,
-            question_id=answer.question_id,
-            selected_option_id=answer.selected_option_id,
-            is_correct=int(is_correct) if is_correct is not None else None,
-            time_spent_seconds=answer.time_spent_seconds,
-        )
-        db.add(attempt_answer)
-
-    total = attempt.total_questions or len(payload.answers)
-    score = (correct_count / total * 100) if total > 0 else 0.0
+            row.is_correct = int(answer.selected_option_id == question.correct_option_id)
+            correct_count += int(row.is_correct)
+    total = attempt.total_questions
+    fully_keyed = all(q.correct_option_id is not None for q in questions.values())
+    score = correct_count / total * 100 if total and fully_keyed else None
 
     attempt.score = score
     attempt.submitted_at = datetime.utcnow()
@@ -193,7 +204,7 @@ async def get_attempt_result(
 
     answer_items: list[AnswerResultItem] = []
     for aa in attempt_answers:
-        q_result = await db.execute(select(Question).where(Question.id == aa.question_id))
+        q_result = await db.execute(select(Question).where(Question.id == aa.question_id, Question.paper_id == attempt.paper_id))
         question: Question | None = q_result.scalar_one_or_none()
         if not question:
             continue
@@ -260,9 +271,6 @@ async def _get_owned_attempt(attempt_id: int, user_id: int, db: AsyncSession) ->
     attempt: Attempt | None = result.scalar_one_or_none()
     if not attempt:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Attempt not found")
-    if attempt.user_id is None:
-        attempt.user_id = user_id
-        await db.commit()
-    elif attempt.user_id != user_id:
+    if attempt.user_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     return attempt

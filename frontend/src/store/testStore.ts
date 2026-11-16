@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { DEMO_MODE } from '../api/demo';
+export const TEST_STORAGE_KEY = DEMO_MODE ? 'rankly_demo_test' : 'rankly_test';
 import type { Question } from '../types';
 
 interface TestState {
@@ -42,7 +44,7 @@ export const useTestStore = create<TestState & TestActions>((set) => ({
     const state = { attemptId, questions, answers, timeSpent: {}, currentIndex: 0, timeLeft: durationSeconds, isSubmitting: false };
     set(state);
     // Persist to sessionStorage for refresh resilience
-    sessionStorage.setItem('rankly_test', JSON.stringify(state));
+    sessionStorage.setItem(TEST_STORAGE_KEY, JSON.stringify(state));
   },
 
   setAnswer: (questionId, optionId) =>
@@ -70,7 +72,13 @@ export const useTestStore = create<TestState & TestActions>((set) => ({
   setSubmitting: (val) => set({ isSubmitting: val }),
 
   resetTest: () => {
-    sessionStorage.removeItem('rankly_test');
+    sessionStorage.removeItem(TEST_STORAGE_KEY);
     set(initialState);
   },
 }));
+
+// Persist both real and sample progress, under separate keys.
+useTestStore.subscribe(state => {
+  if (state.attemptId === null) sessionStorage.removeItem(TEST_STORAGE_KEY);
+  else sessionStorage.setItem(TEST_STORAGE_KEY, JSON.stringify(state));
+});

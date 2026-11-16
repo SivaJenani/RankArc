@@ -1,3 +1,6 @@
+import AnswerKeyUpload from '../components/AnswerKeyUpload';
+import { DEMO_MODE } from '../api/demo';
+import PrivateImage from '../components/PrivateImage';
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -36,14 +39,15 @@ function QuestionEditor({
     try {
       const updated = await updateQuestion(paperId, question.id, {
         text: edit.text,
-        options: edit.options.map((o) => ({ id: o.id, text: o.text })),
+        options: edit.options.map((o) => ({ id: o.id, text: o.text, label: o.label })),
         correct_option_id: edit.correct_option_id,
       });
+      setEdit({ text: updated.text, options: updated.options.map(o => ({id:o.id,text:o.text,label:o.label})), correct_option_id: updated.correct_option_id });
       onUpdated(updated);
       setEditing(false);
       toast.success('Question updated!');
-    } catch {
-      toast.error('Failed to save question.');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to save question.');
     } finally {
       setSaving(false);
     }
@@ -59,10 +63,10 @@ function QuestionEditor({
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur border border-[#000000]/10 rounded-2xl p-5 space-y-4 shadow-sm">
+    <div className="bg-card/80 backdrop-blur border border-fg/10 rounded-2xl p-5 space-y-4 shadow-sm">
       {/* Question header */}
       <div className="flex items-start justify-between gap-3">
-        <span className="shrink-0 w-7 h-7 bg-[#08CB00] text-[#000000] rounded-lg text-xs font-bold flex items-center justify-center">
+        <span className="shrink-0 w-7 h-7 bg-accent text-onaccent rounded-lg text-xs font-bold flex items-center justify-center">
           {index + 1}
         </span>
 
@@ -70,16 +74,16 @@ function QuestionEditor({
           <textarea
             value={edit.text}
             onChange={(e) => setEdit((s) => ({ ...s, text: e.target.value }))}
-            className="flex-1 px-3 py-2 rounded-xl border border-[#08CB00] bg-white text-[#000000] text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#08CB00] min-h-[80px] resize-y"
+            className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-accent bg-card text-fg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-accent min-h-[80px] resize-y"
           />
         ) : (
-          <p className="flex-1 text-[#000000] font-medium text-sm leading-relaxed">{question.text}</p>
+          <p className="flex-1 text-fg font-medium text-sm leading-relaxed">{question.text}</p>
         )}
 
         {!editing && (
           <button
             onClick={() => setEditing(true)}
-            className="shrink-0 p-1.5 rounded-lg hover:bg-[#08CB00]/20 text-[#555555] hover:text-[#000000] transition-colors"
+            className="shrink-0 p-1.5 rounded-lg hover:bg-accent/20 text-muted hover:text-onaccent transition-colors"
             title="Edit question"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,15 +96,15 @@ function QuestionEditor({
 
       {/* Question Diagram / Image if present */}
       {question.image_url && (
-        <div className="mb-4 ml-10 p-3 bg-white rounded-2xl border-2 border-[#000000]/10 max-w-2xl shadow-sm">
-          <a href={question.image_url} target="_blank" rel="noreferrer" title="Click to view full image in new tab">
-            <img
+        <div className="mb-4 ml-10 p-3 bg-card rounded-2xl border-2 border-fg/10 max-w-2xl shadow-sm">
+          <div>
+            <PrivateImage
               src={question.image_url}
               alt={`Question ${question.number} diagram`}
-              className="max-h-72 w-auto max-w-full object-contain rounded-lg hover:opacity-95 transition-opacity"
+              className="w-full h-auto max-w-full object-contain rounded-lg hover:opacity-95 transition-opacity"
               loading="lazy"
             />
-          </a>
+          </div>
         </div>
       )}
 
@@ -116,12 +120,12 @@ function QuestionEditor({
               key={opt.id}
               className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
                 isCorrect
-                  ? 'border-[#08CB00] bg-[#08CB00]/15'
-                  : 'border-[#000000]/10 bg-white/60'
+                  ? 'border-accent bg-accent/15'
+                  : 'border-fg/10 bg-card/60'
               }`}
             >
               <span className={`shrink-0 w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${
-                isCorrect ? 'bg-[#08CB00] text-[#000000]' : 'bg-[#000000]/10 text-[#555555]'
+                isCorrect ? 'bg-accent text-onaccent' : 'bg-nav/10 text-muted'
               }`}>
                 {opt.label || String.fromCharCode(65 + oi)}
               </span>
@@ -137,10 +141,10 @@ function QuestionEditor({
                       ),
                     }))
                   }
-                  className="flex-1 text-sm bg-transparent border-none focus:outline-none text-[#000000] font-medium"
+                  className="flex-1 min-w-0 w-full text-sm bg-transparent border-none focus:outline-none text-fg font-medium"
                 />
               ) : (
-                <span className="flex-1 text-sm text-[#000000] font-medium">{opt.text}</span>
+                <span className="flex-1 text-sm text-fg font-medium">{opt.text}</span>
               )}
 
               {editing && (
@@ -148,8 +152,8 @@ function QuestionEditor({
                   onClick={() => setEdit((s) => ({ ...s, correct_option_id: opt.id }))}
                   className={`shrink-0 text-xs px-2 py-1 rounded-lg font-semibold transition-colors ${
                     isCorrect
-                      ? 'bg-[#08CB00] text-[#000000]'
-                      : 'bg-[#000000]/10 text-[#555555] hover:bg-[#08CB00]/20 hover:text-[#000000]'
+                      ? 'bg-accent text-onaccent'
+                      : 'bg-nav/10 text-muted hover:bg-accent/20 hover:text-onaccent'
                   }`}
                 >
                   {isCorrect ? '✓ Correct' : 'Mark correct'}
@@ -157,7 +161,7 @@ function QuestionEditor({
               )}
 
               {!editing && isCorrect && (
-                <svg className="w-4 h-4 text-[#08CB00] shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-4 h-4 text-accent shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
               )}
@@ -172,13 +176,13 @@ function QuestionEditor({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 bg-[#08CB00] text-[#000000] text-sm font-bold rounded-xl hover:bg-[#07b000] transition-colors disabled:opacity-50"
+            className="px-4 py-2 bg-accent text-onaccent text-sm font-bold rounded-xl hover:bg-accenth transition-colors disabled:opacity-50"
           >
             {saving ? 'Saving…' : 'Save'}
           </button>
           <button
             onClick={handleCancel}
-            className="px-4 py-2 border border-[#000000]/20 text-[#000000] text-sm font-semibold rounded-xl hover:border-[#253900] transition-colors"
+            className="px-4 py-2 border border-fg/20 text-fg text-sm font-semibold rounded-xl !bg-transparent hover:border-deeptext transition-colors"
           >
             Cancel
           </button>
@@ -199,6 +203,7 @@ export default function PaperReview() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
     const fetch = async () => {
       try {
         const qs = await getPaperQuestions(paperId);
@@ -230,13 +235,13 @@ export default function PaperReview() {
     : questions.filter((q) => q.paper_set === selectedShift);
 
   return (
-    <div className="min-h-screen bg-[#EEEEEE] px-4 py-8">
+    <div className="min-h-screen bg-page px-4 py-8">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
           <div>
-            <h1 className="text-3xl font-black text-[#000000] tracking-tight">Review Paper</h1>
-            <p className="text-[#555555] mt-1">
+            <h1 className="text-3xl font-black text-fg tracking-tight">Review Paper</h1>
+            <p className="text-muted mt-1">
               {loading ? 'Loading questions…' : `${questions.length} questions across ${distinctShifts.length || 1} shift${distinctShifts.length > 1 ? 's' : ''} — review and edit before starting`}
             </p>
           </div>
@@ -244,12 +249,14 @@ export default function PaperReview() {
             <button
               onClick={handleStartTest}
               disabled={starting}
-              className="inline-flex items-center gap-2 px-5 py-3 bg-[#08CB00] hover:bg-[#07b000] text-[#000000] font-bold rounded-xl transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-3 bg-accent hover:bg-accenth text-onaccent font-bold rounded-xl transition-colors disabled:opacity-50"
             >
               Choose Shift to Test →
             </button>
           )}
         </div>
+
+        {!loading && questions.length > 0 && !DEMO_MODE && <AnswerKeyUpload key={paperId} paperId={paperId} />}
 
         {/* Shift Filter Tabs if multi-shift */}
         {distinctShifts.length > 1 && (
@@ -258,8 +265,8 @@ export default function PaperReview() {
               onClick={() => setSelectedShift('all')}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
                 selectedShift === 'all'
-                  ? 'bg-[#000000] text-[#08CB00]'
-                  : 'bg-white border border-[#000000]/10 text-[#555555] hover:border-[#08CB00]'
+                  ? 'bg-nav text-accent'
+                  : 'bg-card border border-fg/10 text-muted hover:border-accent'
               }`}
             >
               All Shifts ({questions.length})
@@ -272,8 +279,8 @@ export default function PaperReview() {
                   onClick={() => setSelectedShift(shift)}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
                     selectedShift === shift
-                      ? 'bg-[#000000] text-[#08CB00]'
-                      : 'bg-white border border-[#000000]/10 text-[#555555] hover:border-[#08CB00]'
+                      ? 'bg-nav text-accent'
+                      : 'bg-card border border-fg/10 text-muted hover:border-accent'
                   }`}
                 >
                   Shift {i + 1} ({count})
@@ -287,18 +294,18 @@ export default function PaperReview() {
         {loading ? (
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bg-white/50 rounded-2xl p-5 animate-pulse space-y-3">
-                <div className="h-4 bg-[#000000]/10 rounded w-3/4" />
+              <div key={i} className="bg-card/50 rounded-2xl p-5 animate-pulse space-y-3">
+                <div className="h-4 bg-nav/10 rounded w-3/4" />
                 <div className="space-y-2 ml-10">
                   {[1, 2, 3, 4].map((j) => (
-                    <div key={j} className="h-10 bg-[#000000]/10 rounded-xl" />
+                    <div key={j} className="h-10 bg-nav/10 rounded-xl" />
                   ))}
                 </div>
               </div>
             ))}
           </div>
         ) : displayedQuestions.length === 0 ? (
-          <div className="text-center py-16 text-[#555555]">No questions found for this shift.</div>
+          <div className="text-center py-16 text-muted">No questions found for this shift.</div>
         ) : (
           <div className="space-y-4">
             {displayedQuestions.map((q, i) => (
@@ -319,7 +326,7 @@ export default function PaperReview() {
             <button
               onClick={handleStartTest}
               disabled={starting}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-[#08CB00] hover:bg-[#07b000] text-[#000000] font-bold text-lg rounded-xl transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-accent hover:bg-accenth text-onaccent font-bold text-lg rounded-xl transition-colors disabled:opacity-50"
             >
               {starting ? 'Starting…' : 'Start Test →'}
             </button>

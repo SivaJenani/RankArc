@@ -25,8 +25,8 @@ export default function Landing() {
             </>
           ) : (
             <>
-              <Link to="/register">
-                <button>Get started free <span>→</span></button>
+              <Link to="/dashboard">
+                <button>Explore RankArc <span>→</span></button>
               </Link>
               <Link to="/login">
                 <button className="secondary">Sign in</button>

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: rankly-upload-repair
+    runtime: docker
+    branch: fix-paper-extraction
+    plan: free
+    dockerfilePath: ./Dockerfile.rankly-repair
+    dockerContext: .
+    autoDeployTrigger: "off"
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:////tmp/rankly-repair.db
+      - key: UPLOAD_DIR
+        value: /tmp/rankly-repair-uploads
+      - key: SECRET_KEY
+        generateValue: true

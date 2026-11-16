@@ -86,7 +86,7 @@ export const updateQuestion = async (
       id: o.id,
       option_text: o.text,
       label: o.label ?? '',
-      is_correct: false, // will be set by correct_option_id
+      is_correct: o.id === updateData.correct_option_id,
     }));
   }
   const { data } = await client.put<any>(`/api/papers/${paperId}/questions/${questionId}`, payload);

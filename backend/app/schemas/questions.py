@@ -12,6 +12,7 @@ class OptionRead(BaseModel):
 
 
 class OptionUpdate(BaseModel):
+    id: int | None = None
     label: str
     option_text: str
     is_correct: bool
